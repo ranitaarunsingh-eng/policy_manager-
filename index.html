@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsuRemind Pro - Policy & Renewal Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <div id="app" class="flex flex-col md:flex-row h-screen overflow-hidden">
+
+        <!-- MOBILE NAV OVERLAY & SIDEBAR BACKDROP -->
+        <div id="mobile-backdrop" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-950/60 z-30 hidden md:hidden backdrop-blur-sm"></div>
+
+        <!-- SIDEBAR NAVIGATION (Desktop Permanent + Mobile Drawer) -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700/60 flex flex-col justify-between z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none">
+            <div>
+                <!-- App Logo & Branding -->
+                <div class="h-16 flex items-center justify-between px-6 border-b border-slate-200 dark:border-slate-700/60">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-brand-500/30">
+                            <i class="fa-solid fa-shield-halved text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-bold text-slate-900 dark:text-white leading-tight tracking-tight">InsuRemind</h1>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Infinite Cloud Sync</p>
+                        </div>
+                    </div>
+                    <button onclick="toggleMobileMenu()" class="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Sync Status Indicator Card -->
+                <div class="p-4 mx-4 mt-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <span id="sync-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div>
+                            <p class="font-bold text-slate-700 dark:text-slate-200" id="sync-title">Cloud Live</p>
+                            <p class="text-[10px] text-slate-400" id="sync-sub">Synced across devices</p>
+                        </div>
+                    </div>
+                    <button onclick="exportToCSV()" title="Export CSV for Laptop Excel" class="p-2 text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-all">
+                        <i class="fa-solid fa-file-csv text-base"></i>
+                    </button>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="p-4 space-y-1.5">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 shadow-sm">
+                        <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('clients')" id="nav-clients" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white transition-all">
+                        <i class="fa-solid fa-address-book w-5 text-center"></i> Policies & Clients
+                    </button>
+                    <button onclick="switchTab('reminders')" id="nav-reminders" class="nav-item w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-white transition-all">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-bell w-5 text-center"></i> Due Reminders
+                        </div>
+                        <span id="badge-due-count" class="bg-amber-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Quick Add & Dark Mode Controls -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700/60 space-y-3">
+                <button onclick="openModal('add-client')" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-500/25 active:scale-95 transition-all">
+                    <i class="fa-solid fa-plus text-xs"></i> New Client Policy
+                </button>
+                <div class="flex items-center justify-between pt-1 px-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span class="text-[11px] font-medium"><i class="fa-solid fa-mobile-screen-button mr-1"></i> Phone & Laptop</span>
+                    <button onclick="toggleDarkMode()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300">
+                        <i class="fa-solid fa-moon dark:hidden"></i>
+                        <i class="fa-solid fa-sun hidden dark:block"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            
+            <!-- HEADER BAR -->
+            <header class="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700/60 flex items-center justify-between px-4 sm:px-8 z-20 shrink-0">
+                <div class="flex items-center gap-3 flex-1 max-w-xl">
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                    <!-- Global Search bar matching name, phone, email, policy #, insurer & vehicle # -->
+                    <div class="relative w-full">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Search by name, phone, policy #, vehicle #, insurer..." class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-slate-100 dark:bg-slate-900/60 border border-transparent focus:border-brand-500 dark:focus:border-brand-500 rounded-xl outline-none transition-all">
+                    </div>
+                </div>
+
+                <!-- Controls & Device Actions -->
+                <div class="flex items-center gap-2 sm:gap-3 ml-2">
+                    <button onclick="exportToCSV()" class="hidden sm:flex items-center gap-2 px-3.5 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl transition-all">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i> Export CSV
+                    </button>
+                    <button onclick="openModal('add-client')" class="md:hidden p-2.5 bg-brand-600 text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-500/20 active:scale-95">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- VIEWPORT SCROLLABLE AREA -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar pb-24 md:pb-8">
+
+                <!-- 1. DASHBOARD VIEW -->
+                <div id="view-dashboard" class="space-y-6">
+                    <!-- Stat Cards Grid -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                        <!-- Stat Card 1 -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Total Active</p>
+                                <h3 id="stat-active-policies" class="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">0</h3>
+                                <p class="text-[10px] sm:text-xs text-emerald-600 font-medium mt-1"><i class="fa-solid fa-circle-check mr-1"></i>In Force</p>
+                            </div>
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
+                                <i class="fa-solid fa-shield-check"></i>
+                            </div>
+                        </div>
+                        <!-- Stat Card 2 -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Due Soon</p>
+                                <h3 id="stat-due-renewals" class="text-xl sm:text-3xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">0</h3>
+                                <p class="text-[10px] sm:text-xs text-amber-600 font-medium mt-1"><i class="fa-solid fa-clock mr-1"></i>Action Required</p>
+                            </div>
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
+                                <i class="fa-solid fa-hourglass-half"></i>
+                            </div>
+                        </div>
+                        <!-- Stat Card 3 -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Overdue</p>
+                                <h3 id="stat-overdue-policies" class="text-xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 mt-1">0</h3>
+                                <p class="text-[10px] sm:text-xs text-rose-600 font-medium mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Lapsed Risk</p>
+                            </div>
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                            </div>
+                        </div>
+                        <!-- Stat Card 4 -->
+                        <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Premium Vol.</p>
+                                <h3 id="stat-total-premium" class="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">$0</h3>
+                                <p class="text-[10px] sm:text-xs text-brand-600 dark:text-brand-400 font-medium mt-1"><i class="fa-solid fa-vault mr-1"></i>Total Portfolio</p>
+                            </div>
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center text-lg sm:text-xl shrink-0">
+                                <i class="fa-solid fa-sack-dollar"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Priority Renewal Notices -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm p-4 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Priority Renewal Notices</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Policies expiring soon or overdue requiring instant client contact.</p>
+                            </div>
+                            <button onclick="switchTab('reminders')" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                                View All <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </button>
+                        </div>
+
+                        <!-- Dynamic List -->
+                        <div id="dashboard-urgent-list" class="space-y-3">
+                            <!-- Dynamically rendered -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. ALL CLIENTS & POLICIES VIEW -->
+                <div id="view-clients" class="space-y-4 hidden">
+                    <!-- Advanced Multi-Filter Header Bar -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col gap-3">
+                        <!-- Status Quick Filter Buttons -->
+                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-between">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-600 text-white shadow-sm">All Clients</button>
+                                <button onclick="setFilter('Active')" id="filter-Active" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">Active</button>
+                                <button onclick="setFilter('Due Soon')" id="filter-Due Soon" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">Due Soon</button>
+                                <button onclick="setFilter('Overdue')" id="filter-Overdue" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">Overdue</button>
+                                <button onclick="setFilter('This Month')" id="filter-This Month" class="filter-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">This Month</button>
+                            </div>
+                            <span id="record-count-badge" class="text-xs font-bold text-slate-500 dark:text-slate-400">Total Records: 0</span>
+                        </div>
+
+                        <!-- Dropdown Multi-Filters (Category, Sort Order, Month Expiry Filter) -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Insurance Category</label>
+                                <select id="type-filter" onchange="applyFilters()" class="w-full px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-semibold text-slate-700 dark:text-slate-300">
+                                    <option value="">All Categories</option>
+                                    <option value="Health">Health</option>
+                                    <option value="Motor / Vehicle">Motor / Vehicle</option>
+                                    <option value="Life">Life</option>
+                                    <option value="Term">Term</option>
+                                    <option value="Property / Home">Property / Home</option>
+                                    <option value="Commercial">Commercial</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sort By</label>
+                                <select id="sort-filter" onchange="applyFilters()" class="w-full px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-semibold text-slate-700 dark:text-slate-300">
+                                    <option value="expiry-asc">Expiry Date (Soonest First)</option>
+                                    <option value="expiry-desc">Expiry Date (Furthest First)</option>
+                                    <option value="name-asc">Client Name (A - Z)</option>
+                                    <option value="premium-desc">Premium Amount (High to Low)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter Expiry Month</label>
+                                <input type="month" id="month-filter" onchange="applyFilters()" class="w-full px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-semibold text-slate-700 dark:text-slate-300">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DESKTOP TABLE VIEW (md:block) -->
+                    <div class="hidden md:block bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-900/50 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th class="py-3.5 px-4 font-bold">Client Name</th>
+                                        <th class="py-3.5 px-4 font-bold">Contact</th>
+                                        <th class="py-3.5 px-4 font-bold">Type & Insurer</th>
+                                        <th class="py-3.5 px-4 font-bold">Policy / Vehicle #</th>
+                                        <th class="py-3.5 px-4 font-bold">Sum / Premium</th>
+                                        <th class="py-3.5 px-4 font-bold">Expiry Date</th>
+                                        <th class="py-3.5 px-4 font-bold">Status</th>
+                                        <th class="py-3.5 px-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clients-table-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <!-- Dynamic Rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MOBILE CARD LIST VIEW (md:hidden) -->
+                    <div id="clients-mobile-cards" class="md:hidden space-y-3">
+                        <!-- Dynamic Mobile Cards -->
+                    </div>
+                </div>
+
+                <!-- 3. REMINDERS DASHBOARD VIEW -->
+                <div id="view-reminders" class="space-y-6 hidden">
+                    <!-- Reminder Settings Header -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700/60 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Client Renewal Reminder Center</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Dispatch pre-formatted WhatsApp & Email notices directly from laptop or phone.</p>
+                        </div>
+                        <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                            <label class="text-xs font-bold text-slate-600 dark:text-slate-300">Expiring Within:</label>
+                            <select id="reminder-window" onchange="renderReminders()" class="px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-bold text-brand-600 dark:text-brand-400">
+                                <option value="15">15 Days</option>
+                                <option value="30" selected>30 Days</option>
+                                <option value="60">60 Days</option>
+                                <option value="90">90 Days</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Reminders Grid -->
+                    <div id="reminders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Dynamic Cards -->
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- MOBILE BOTTOM NAVIGATION BAR -->
+        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700/60 flex justify-around p-2 z-30 shadow-lg">
+            <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard" class="flex flex-col items-center py-1 px-3 text-brand-600 dark:text-brand-400">
+                <i class="fa-solid fa-chart-pie text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Home</span>
+            </button>
+            <button onclick="switchTab('clients')" id="mobile-nav-clients" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                <i class="fa-solid fa-address-book text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Policies</span>
+            </button>
+            <button onclick="openModal('add-client')" class="flex flex-col items-center -mt-5">
+                <div class="w-12 h-12 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-500/40 text-xl border-4 border-white dark:border-slate-800">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+            </button>
+            <button onclick="switchTab('reminders')" id="mobile-nav-reminders" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 relative">
+                <i class="fa-solid fa-bell text-lg"></i>
+                <span class="text-[10px] font-bold mt-0.5">Remind</span>
+                <span id="mobile-badge-due" class="absolute top-1 right-2 w-2 h-2 rounded-full bg-amber-500 hidden"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT CLIENT POLICY -->
+    <div id="modal-add-client" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
+                <h3 id="modal-title" class="font-bold text-slate-900 dark:text-white text-base">Add New Client Policy</h3>
+                <button onclick="closeModal('add-client')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Form Body -->
+            <form id="policy-form" onsubmit="handleSavePolicy(event)" class="p-5 overflow-y-auto space-y-4 custom-scrollbar">
+                <input type="hidden" id="edit-policy-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <!-- Client Name -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Client Full Name *</label>
+                        <input type="text" id="form-name" required placeholder="John Doe" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                    </div>
+                    <!-- Phone Number -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Phone Number (with Country Code) *</label>
+                        <input type="tel" id="form-phone" required placeholder="+1234567890" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <!-- Email Address -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address *</label>
+                        <input type="email" id="form-email" required placeholder="client@example.com" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                    </div>
+                    <!-- Insurance Provider -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Insurance Company / Provider *</label>
+                        <input type="text" id="form-provider" required placeholder="e.g. Allianz, HDFC ERGO" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <!-- Insurance Category -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Category *</label>
+                        <select id="form-type" required class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                            <option value="Health">Health</option>
+                            <option value="Motor / Vehicle">Motor / Vehicle</option>
+                            <option value="Life">Life</option>
+                            <option value="Term">Term</option>
+                            <option value="Property / Home">Property / Home</option>
+                            <option value="Commercial">Commercial</option>
+                        </select>
+                    </div>
+                    <!-- Policy Number -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Policy Number *</label>
+                        <input type="text" id="form-policy-num" required placeholder="POL-987654" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-mono">
+                    </div>
+                    <!-- Vehicle Number (Optional) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Vehicle No. (If motor)</label>
+                        <input type="text" id="form-vehicle-num" placeholder="AB-12-CD-3456" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-mono">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <!-- Sum Assured -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Sum Assured / Coverage ($)</label>
+                        <input type="number" id="form-sum-assured" placeholder="100000" min="0" step="0.01" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                    </div>
+                    <!-- Premium Amount -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Annual Premium ($) *</label>
+                        <input type="number" id="form-premium" required placeholder="1200" min="0" step="0.01" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-medium">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <!-- Start Date -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Start Date *</label>
+                        <input type="date" id="form-start-date" required class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500">
+                    </div>
+                    <!-- Expiry Date -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Expiry Date *</label>
+                        <input type="date" id="form-expiry-date" required class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500">
+                    </div>
+                    <!-- Custom Reminder Lead Days -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Remind Lead Days</label>
+                        <input type="number" id="form-reminder-days" value="30" min="1" max="180" class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-brand-500 font-bold">
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="pt-3 flex justify-end gap-2.5 border-t border-slate-200 dark:border-slate-700">
+                    <button type="button" onclick="closeModal('add-client')" class="px-4 py-2.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl shadow-md shadow-brand-500/25">Save & Sync Policy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PREVIEW / SEND REMINDER -->
+    <div id="modal-reminder" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-lg p-5 sm:p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-slate-900 dark:text-white text-base">Dispatch Policy Notice</h3>
+                <button onclick="closeModal('reminder')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-1.5">
+                <p class="text-xs font-bold text-slate-500 dark:text-slate-400">Customized Message Template:</p>
+                <textarea id="reminder-text-preview" rows="6" class="w-full p-3.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-mono text-slate-700 dark:text-slate-300 leading-relaxed"></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button id="btn-whatsapp-send" class="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 active:scale-95 transition-all">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> WhatsApp Direct
+                </button>
+                <button id="btn-email-send" class="py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-md shadow-indigo-500/20 active:scale-95 transition-all">
+                    <i class="fa-solid fa-envelope text-lg"></i> Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE MODULES & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Setup Guard
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'insure-remind-sync';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "demo-api-key",
+            authDomain: "demo-app.firebaseapp.com",
+            projectId: "demo-app",
+            storageBucket: "demo-app.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let policies = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        // RULE 3 - Auth Before Queries
+        async function authenticateUser() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase auth error, switching fallback mode:", error);
+                document.getElementById('sync-title').innerText = 'Local Mode';
+                document.getElementById('sync-sub').innerText = 'Saving locally';
+                document.getElementById('sync-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('sync-title').innerText = 'Cloud Synced';
+                document.getElementById('sync-sub').innerText = 'Live on Phone & Laptop';
+                document.getElementById('sync-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+                subscribeToPolicies();
+            }
+        });
+
+        authenticateUser();
+
+        // RULE 1 & 2 - Strict Path & Simple Memory Queries (Supports infinite items dynamically)
+        function subscribeToPolicies() {
+            if (!currentUser) return;
+            const userPoliciesCollection = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'policies');
+            
+            onSnapshot(userPoliciesCollection, (snapshot) => {
+                policies = [];
+                snapshot.forEach((docSnap) => {
+                    policies.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderAllViews();
+            }, (error) => {
+                console.error("Firestore Error:", error);
+            });
+        }
+
+        // Exposed Navigation Functions
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('[id^="view-"]').forEach(el => el.classList.add('hidden'));
+            
+            // Sidebar buttons highlight
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-brand-50', 'dark:bg-brand-500/10', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
+                el.classList.add('text-slate-600', 'dark:text-slate-400');
+            });
+
+            // Mobile nav bar icons highlight
+            document.querySelectorAll('[id^="mobile-nav-"]').forEach(el => {
+                el.className = "flex flex-col items-center py-1 px-3 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200";
+            });
+
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-brand-50', 'dark:bg-brand-500/10', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
+            }
+
+            const activeMobileNav = document.getElementById(`mobile-nav-${tabId}`);
+            if (activeMobileNav) {
+                activeMobileNav.className = "flex flex-col items-center py-1 px-3 text-brand-600 dark:text-brand-400";
+            }
+
+            // Close mobile menu drawer if open
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('mobile-backdrop');
+            if (!sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        };
+
+        window.toggleMobileMenu = () => {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('mobile-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        };
+
+        window.openModal = (modalId, editId = null) => {
+            if (modalId === 'add-client') {
+                document.getElementById('policy-form').reset();
+                document.getElementById('edit-policy-id').value = '';
+                document.getElementById('modal-title').innerText = 'Add New Client Policy';
+                
+                if (editId) {
+                    const policy = policies.find(p => p.id === editId);
+                    if (policy) {
+                        document.getElementById('modal-title').innerText = 'Edit Client Policy';
+                        document.getElementById('edit-policy-id').value = policy.id;
+                        document.getElementById('form-name').value = policy.name || '';
+                        document.getElementById('form-phone').value = policy.phone || '';
+                        document.getElementById('form-email').value = policy.email || '';
+                        document.getElementById('form-provider').value = policy.provider || '';
+                        document.getElementById('form-type').value = policy.type || 'Health';
+                        document.getElementById('form-policy-num').value = policy.policyNum || '';
+                        document.getElementById('form-vehicle-num').value = policy.vehicleNum || '';
+                        document.getElementById('form-sum-assured').value = policy.sumAssured || '';
+                        document.getElementById('form-premium').value = policy.premium || '';
+                        document.getElementById('form-start-date').value = policy.startDate || '';
+                        document.getElementById('form-expiry-date').value = policy.expiryDate || '';
+                        document.getElementById('form-reminder-days').value = policy.reminderDays || 30;
+                    }
+                }
+            }
+            document.getElementById(`modal-${modalId}`).classList.remove('hidden');
+        };
+
+        window.closeModal = (modalId) => {
+            document.getElementById(`modal-${modalId}`).classList.add('hidden');
+        };
+
+        window.handleSavePolicy = async (event) => {
+            event.preventDefault();
+            if (!currentUser) return;
+
+            const editId = document.getElementById('edit-policy-id').value;
+            const policyId = editId || 'pol_' + Date.now();
+
+            const policyData = {
+                name: document.getElementById('form-name').value,
+                phone: document.getElementById('form-phone').value,
+                email: document.getElementById('form-email').value,
+                provider: document.getElementById('form-provider').value,
+                type: document.getElementById('form-type').value,
+                policyNum: document.getElementById('form-policy-num').value,
+                vehicleNum: document.getElementById('form-vehicle-num').value || '',
+                sumAssured: parseFloat(document.getElementById('form-sum-assured').value) || 0,
+                premium: parseFloat(document.getElementById('form-premium').value) || 0,
+                startDate: document.getElementById('form-start-date').value,
+                expiryDate: document.getElementById('form-expiry-date').value,
+                reminderDays: parseInt(document.getElementById('form-reminder-days').value) || 30,
+                updatedAt: new Date().toISOString()
+            };
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'policies', policyId);
+                await setDoc(docRef, policyData, { merge: true });
+                closeModal('add-client');
+            } catch (err) {
+                console.error("Error saving policy:", err);
+            }
+        };
+
+        window.deletePolicy = async (id) => {
+            if (!currentUser) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'policies', id);
+                await deleteDoc(docRef);
+            } catch (err) {
+                console.error("Error deleting policy:", err);
+            }
+        };
+
+        window.setFilter = (filter) => {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300');
+            });
+            const activeBtn = document.getElementById(`filter-${filter}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+            }
+            renderClientsTable();
+        };
+
+        window.handleGlobalSearch = (val) => {
+            searchQuery = val.toLowerCase().trim();
+            renderClientsTable();
+            renderReminders();
+        };
+
+        window.applyFilters = () => {
+            renderClientsTable();
+        };
+
+        // Export to CSV for Excel Analysis
+        window.exportToCSV = () => {
+            if (policies.length === 0) {
+                alert("No policy records available to export.");
+                return;
+            }
+
+            const headers = ["Client Name", "Phone", "Email", "Category", "Provider", "Policy Number", "Vehicle Number", "Sum Assured ($)", "Premium ($)", "Start Date", "Expiry Date", "Status"];
+            const rows = policies.map(p => {
+                const status = getPolicyStatus(p.expiryDate, p.reminderDays).label;
+                return [
+                    `"${p.name || ''}"`,
+                    `"${p.phone || ''}"`,
+                    `"${p.email || ''}"`,
+                    `"${p.type || ''}"`,
+                    `"${p.provider || ''}"`,
+                    `"${p.policyNum || ''}"`,
+                    `"${p.vehicleNum || ''}"`,
+                    p.sumAssured || 0,
+                    p.premium || 0,
+                    `"${p.startDate || ''}"`,
+                    `"${p.expiryDate || ''}"`,
+                    `"${status}"`
+                ];
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Client_Insurance_Policies_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // Evaluates policy statuses dynamically
+        function getPolicyStatus(expiryDateStr, leadDays = 30) {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expiry = new Date(expiryDateStr);
+            const diffTime = expiry - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) return { label: 'Overdue', color: 'bg-rose-500/10 text-rose-600 border-rose-500/20', days: diffDays };
+            if (diffDays <= leadDays) return { label: 'Due Soon', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20', days: diffDays };
+            return { label: 'Active', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', days: diffDays };
+        }
+
+        // Render Controllers
+        function renderAllViews() {
+            renderStats();
+            renderUrgentDashboardList();
+            renderClientsTable();
+            renderReminders();
+        }
+
+        function renderStats() {
+            const totalPremium = policies.reduce((acc, p) => acc + (p.premium || 0), 0);
+            
+            let activeCount = 0;
+            let dueCount = 0;
+            let overdueCount = 0;
+
+            policies.forEach(p => {
+                const status = getPolicyStatus(p.expiryDate, p.reminderDays);
+                if (status.label === 'Active') activeCount++;
+                if (status.label === 'Due Soon') dueCount++;
+                if (status.label === 'Overdue') overdueCount++;
+            });
+
+            document.getElementById('stat-active-policies').innerText = activeCount;
+            document.getElementById('stat-due-renewals').innerText = dueCount;
+            document.getElementById('stat-overdue-policies').innerText = overdueCount;
+            document.getElementById('stat-total-premium').innerText = '$' + totalPremium.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0});
+
+            const badge = document.getElementById('badge-due-count');
+            const mobileBadge = document.getElementById('mobile-badge-due');
+            const totalAction = dueCount + overdueCount;
+            if (totalAction > 0) {
+                badge.innerText = totalAction;
+                badge.classList.remove('hidden');
+                mobileBadge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                mobileBadge.classList.add('hidden');
+            }
+        }
+
+        function renderUrgentDashboardList() {
+            const container = document.getElementById('dashboard-urgent-list');
+            container.innerHTML = '';
+
+            const urgent = policies
+                .map(p => ({ ...p, statusInfo: getPolicyStatus(p.expiryDate, p.reminderDays) }))
+                .filter(p => p.statusInfo.label === 'Due Soon' || p.statusInfo.label === 'Overdue')
+                .sort((a, b) => a.statusInfo.days - b.statusInfo.days)
+                .slice(0, 5);
+
+            if (urgent.length === 0) {
+                container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400 font-medium">✨ All client policies are up to date!</div>`;
+                return;
+            }
+
+            urgent.forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3';
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-sm shrink-0">
+                            <i class="fa-solid fa-clock font-normal"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-sm text-slate-900 dark:text-white">${p.name}</h4>
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full border ${p.statusInfo.color}">${p.statusInfo.label}</span>
+                            </div>
+                            <p class="text-xs text-slate-500">${p.type} • ${p.policyNum} ${p.vehicleNum ? '• (' + p.vehicleNum + ')' : ''} • Exp: <span class="font-semibold text-slate-700 dark:text-slate-300">${p.expiryDate}</span></p>
+                        </div>
+                    </div>
+                    <button onclick="triggerReminderModal('${p.id}')" class="w-full sm:w-auto px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all">
+                        <i class="fa-solid fa-paper-plane text-[10px]"></i> Remind Client
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderClientsTable() {
+            const tbody = document.getElementById('clients-table-body');
+            const mobileCards = document.getElementById('clients-mobile-cards');
+            tbody.innerHTML = '';
+            mobileCards.innerHTML = '';
+
+            const typeFilter = document.getElementById('type-filter').value;
+            const sortFilter = document.getElementById('sort-filter').value;
+            const monthFilter = document.getElementById('month-filter').value;
+            const currentMonthStr = new Date().toISOString().slice(0,7);
+
+            // Filter logic
+            let filtered = policies.filter(p => {
+                const status = getPolicyStatus(p.expiryDate, p.reminderDays);
+                
+                if (currentFilter === 'This Month' && (!p.expiryDate || !p.expiryDate.startsWith(currentMonthStr))) return false;
+                if (currentFilter !== 'all' && currentFilter !== 'This Month' && status.label !== currentFilter) return false;
+                if (typeFilter && p.type !== typeFilter) return false;
+                if (monthFilter && (!p.expiryDate || !p.expiryDate.startsWith(monthFilter))) return false;
+
+                // Enhanced Multi-filter search (Name, Phone, Email, Policy #, Insurer, Vehicle #)
+                if (searchQuery) {
+                    const matchName = p.name.toLowerCase().includes(searchQuery);
+                    const matchPhone = (p.phone || '').toLowerCase().includes(searchQuery);
+                    const matchEmail = (p.email || '').toLowerCase().includes(searchQuery);
+                    const matchPolicy = p.policyNum.toLowerCase().includes(searchQuery);
+                    const matchProvider = (p.provider || '').toLowerCase().includes(searchQuery);
+                    const matchVehicle = (p.vehicleNum || '').toLowerCase().includes(searchQuery);
+
+                    if (!matchName && !matchPhone && !matchEmail && !matchPolicy && !matchProvider && !matchVehicle) return false;
+                }
+
+                return true;
+            });
+
+            // Sorting logic
+            filtered.sort((a, b) => {
+                if (sortFilter === 'expiry-asc') return new Date(a.expiryDate) - new Date(b.expiryDate);
+                if (sortFilter === 'expiry-desc') return new Date(b.expiryDate) - new Date(a.expiryDate);
+                if (sortFilter === 'name-asc') return a.name.localeCompare(b.name);
+                if (sortFilter === 'premium-desc') return (b.premium || 0) - (a.premium || 0);
+                return 0;
+            });
+
+            document.getElementById('record-count-badge').innerText = `Total Records: ${filtered.length}`;
+
+            if (filtered.length === 0) {
+                const emptyMarkup = `<div class="py-10 text-center text-xs text-slate-400 font-medium">No matching client policies found.</div>`;
+                tbody.innerHTML = `<tr><td colspan="8">${emptyMarkup}</td></tr>`;
+                mobileCards.innerHTML = emptyMarkup;
+                return;
+            }
+
+            filtered.forEach(p => {
+                const status = getPolicyStatus(p.expiryDate, p.reminderDays);
+                
+                // 1. Desktop Table Row
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">${p.name}</td>
+                    <td class="py-3.5 px-4 text-xs">
+                        <div class="font-medium text-slate-700 dark:text-slate-300">${p.phone}</div>
+                        <div class="text-slate-400">${p.email}</div>
+                    </td>
+                    <td class="py-3.5 px-4 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        ${p.type} <span class="text-slate-400 text-[11px]">(${p.provider})</span>
+                    </td>
+                    <td class="py-3.5 px-4 text-xs font-mono text-slate-600 dark:text-slate-400">
+                        ${p.policyNum}
+                        ${p.vehicleNum ? `<div class="text-[10px] text-brand-600 dark:text-brand-400 font-bold">${p.vehicleNum}</div>` : ''}
+                    </td>
+                    <td class="py-3.5 px-4 text-xs">
+                        <div class="font-bold text-slate-900 dark:text-white">$${(p.premium || 0).toLocaleString()}</div>
+                        ${p.sumAssured ? `<div class="text-[10px] text-slate-400">Sum: $${p.sumAssured.toLocaleString()}</div>` : ''}
+                    </td>
+                    <td class="py-3.5 px-4 text-xs font-medium text-slate-600 dark:text-slate-300">${p.expiryDate}</td>
+                    <td class="py-3.5 px-4">
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full border ${status.color}">${status.label}</span>
+                    </td>
+                    <td class="py-3.5 px-4 text-right space-x-1">
+                        <button onclick="triggerReminderModal('${p.id}')" class="p-1.5 text-brand-600 hover:text-brand-700 rounded" title="Send Notice">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                        <button onclick="openModal('add-client', '${p.id}')" class="p-1.5 text-slate-400 hover:text-brand-600 rounded">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deletePolicy('${p.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 rounded">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // 2. Mobile Card Item
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-sm space-y-3';
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-base">${p.name}</h4>
+                            <p class="text-xs text-slate-400">${p.type} • ${p.provider}</p>
+                        </div>
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full border ${status.color}">${status.label}</span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl text-xs space-y-1.5 border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Phone:</span>
+                            <span class="font-medium text-slate-700 dark:text-slate-300">${p.phone}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Policy #:</span>
+                            <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${p.policyNum}</span>
+                        </div>
+                        ${p.vehicleNum ? `<div class="flex justify-between"><span class="text-slate-400">Vehicle #:</span><span class="font-mono font-bold text-brand-600 dark:text-brand-400">${p.vehicleNum}</span></div>` : ''}
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Expiry Date:</span>
+                            <span class="font-bold text-amber-600 dark:text-amber-400">${p.expiryDate}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Premium:</span>
+                            <span class="font-bold text-slate-900 dark:text-white">$${(p.premium || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="triggerReminderModal('${p.id}')" class="flex-1 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-paper-plane"></i> Notice
+                        </button>
+                        <button onclick="openModal('add-client', '${p.id}')" class="p-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-xs">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deletePolicy('${p.id}')" class="p-2 bg-rose-50 text-rose-600 dark:bg-rose-500/10 rounded-xl text-xs">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+                mobileCards.appendChild(card);
+            });
+        }
+
+        window.renderReminders = () => {
+            const grid = document.getElementById('reminders-grid');
+            grid.innerHTML = '';
+
+            const windowDays = parseInt(document.getElementById('reminder-window').value) || 30;
+
+            const expiring = policies.filter(p => {
+                const status = getPolicyStatus(p.expiryDate, p.reminderDays);
+                return status.days <= windowDays;
+            }).sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+
+            if (expiring.length === 0) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400 text-xs">No policies due within the ${windowDays}-day reminder frame.</div>`;
+                return;
+            }
+
+            expiring.forEach(p => {
+                const status = getPolicyStatus(p.expiryDate, p.reminderDays);
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white text-base">${p.name}</h4>
+                            <p class="text-xs text-slate-400">${p.type} • ${p.provider}</p>
+                        </div>
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full border ${status.color}">${status.label}</span>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-3.5 rounded-xl text-xs space-y-2 border border-slate-100 dark:border-slate-700/50">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Policy #:</span>
+                            <span class="font-mono font-semibold text-slate-700 dark:text-slate-300">${p.policyNum}</span>
+                        </div>
+                        ${p.vehicleNum ? `<div class="flex justify-between"><span class="text-slate-400">Vehicle #:</span><span class="font-mono font-bold text-brand-600 dark:text-brand-400">${p.vehicleNum}</span></div>` : ''}
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Expiry Date:</span>
+                            <span class="font-bold text-amber-600 dark:text-amber-400">${p.expiryDate} (${status.days < 0 ? Math.abs(status.days) + ' days ago' : status.days + ' days left'})</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Premium:</span>
+                            <span class="font-bold text-slate-900 dark:text-white">$${(p.premium || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <button onclick="triggerReminderModal('${p.id}')" class="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+                        <i class="fa-solid fa-paper-plane"></i> Dispatch Reminder
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        };
+
+        window.triggerReminderModal = (policyId) => {
+            const policy = policies.find(p => p.id === policyId);
+            if (!policy) return;
+
+            const vehicleInfo = policy.vehicleNum ? `\n🚘 Vehicle No: ${policy.vehicleNum}` : '';
+            const message = `Hello ${policy.name},\n\nThis is a friendly reminder regarding your ${policy.type} Insurance Policy (${policy.policyNum}) with ${policy.provider}.${vehicleInfo}\n\n📅 Expiry Date: ${policy.expiryDate}\n💰 Premium Amount: $${policy.premium}\n\nPlease get in touch with us to complete the renewal of your policy and maintain uninterrupted coverage.\n\nThank you!\nYour Insurance Advisor`;
+
+            document.getElementById('reminder-text-preview').value = message;
+
+            document.getElementById('btn-whatsapp-send').onclick = () => {
+                const cleanPhone = (policy.phone || '').replace(/[^0-9]/g, '');
+                const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank');
+            };
+
+            document.getElementById('btn-email-send').onclick = () => {
+                const subject = encodeURIComponent(`Policy Renewal Notice: ${policy.type} (${policy.policyNum})`);
+                const body = encodeURIComponent(message);
+                window.open(`mailto:${policy.email}?subject=${subject}&body=${body}`, '_blank');
+            };
+
+            openModal('reminder');
+        };
+
+        window.toggleDarkMode = () => {
+            document.documentElement.classList.toggle('dark');
+        };
+    </script>
+</body>
+</html>
