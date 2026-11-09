@@ -476,17 +476,17 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"
 
-       
-        const firebaseConfig = {
-            apiKey: "AIzaSyDtbq4aJLvm59PsBSGtv9KC6zZYQZirJvY",
-            authDomain: "insuarance-app.firebaseapp.com",
-            projectId: "insuarance-app",
-            storageBucket: "insuarance-app.firebasestorage.app",
-            messagingSenderId: "335692855840",
-            appId: "1:335692855840:web:669dc4f7973ba6ad591a45"
-        };
+       const firebaseConfig = {
+  apiKey: "AIzaSyDtbq4aJLvm59PsBSGtv9KC6zZYQZirJvY",
+  authDomain: "insuarance-app.firebaseapp.com",
+  projectId: "insuarance-app",
+  storageBucket: "insuarance-app.firebasestorage.app",
+  messagingSenderId: "335692855840",
+  appId: "1:335692855840:web:669dc4f7973ba6ad591a45",
+  measurementId: "G-1LSL8Q3J44"
+};
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
